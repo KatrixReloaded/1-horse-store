@@ -1,3 +1,32 @@
-60008060093d393df3%
+// 60008060093d393df3 -> Contract Creation Bytecode
+// 60008060093d393df3 5f -> 5f is the opcode for PUSH0
+// You can check opcodes in evm.codes
 
-#define macro MAIN() = takes(0) returns(0) {}
+// 0xcdfead2e00000000000000000000000000000000000000000000000000000001
+#define macro MAIN() = takes(0) returns(0) {
+    // 0x00          // [0]
+    // // Huff is smart enough to know that I mean PUSH0 0x00 by this
+    // // If I wrote 0x01, it would know I mean PUSH1 0x01, and so on
+    // calldataload  // [calldata]
+    // // adds the first 32 bytes of calldata to the stack
+    // // Pops off the 0x00 value from the stack so that it doesn't skip the first byte of calldata
+    // /** To get the function selector, we need to get the first 4 bytes of calldata, 
+    //  * which means we need to shift the calldata by 28 bytes to the right, or 224 bits
+    //  */
+    // 0xe0          // TOP [0xe0, calldata] BOTTOM
+    // shr           // [functionSelector]
+    0x00 calldataload 0xe0 shr
+
+    // 0xcdfead2e == updateHorseNumber(uint256)
+    // 0xe026c017 == readNumberOfHorses()
+    0xcdfead2e       // [0xcdfead2e, functionSelector]
+    eq               // [true_if_matches]
+    // jump to updateHorseNumber code if true
+    updateJump       // [updateHorseNumberProgramCounter, true/false]
+    jumpi            // []
+
+    updateJump:
+        SET_NUMBER_OF_HORSES()
+}
+
+#define macro SET_NUMBER_OF_HORSES() = takes(0) returns(0) {}
