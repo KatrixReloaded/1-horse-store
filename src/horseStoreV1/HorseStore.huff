@@ -3,6 +3,10 @@
 // You can check opcodes in evm.codes
 
 // 0xcdfead2e00000000000000000000000000000000000000000000000000000001
+// 0xe026c01700000000000000000000000000000000000000000000000000000001
+
+#define constant NUMBER_OF_HORSES_STORAGE_SLOT = FREE_STORAGE_POINTER() // A counter, essentially, that says "hey here's a slot that's currently open to store"
+
 #define macro MAIN() = takes(0) returns(0) {
     // 0x00          // [0]
     // // Huff is smart enough to know that I mean PUSH0 0x00 by this
@@ -19,14 +23,38 @@
 
     // 0xcdfead2e == updateHorseNumber(uint256)
     // 0xe026c017 == readNumberOfHorses()
-    0xcdfead2e       // [0xcdfead2e, functionSelector]
-    eq               // [true_if_matches]
+    dup1             // [functionSelector, functionSelector]
+    0xcdfead2e       // [0xcdfead2e, functionSelector, functionSelector]
+    eq               // [true_if_matches, functionSelector]
     // jump to updateHorseNumber code if true
-    updateJump       // [updateHorseNumberProgramCounter, true/false]
+    updateJump       // [updateHorseNumberProgramCounter, true/false, functionSelector]
+    jumpi            // [functionSelector]
+    // now even if it doesn't jump, it will still have the functionSelector on the stack
+
+    /** readNumberOfHorses, if the function selector doesn't match updateHorseNumber, then we'd have to get the function selector
+     * again and then compare it to readNumberOfHorses. Instead, use DUP1 to duplicate the function selector and then compare it to
+     * readNumberOfHorses. Saves gas and is more efficient, whereas solidity might not be as efficient.
+     */
+    0xe026c017       // [0xe026c017, functionSelector]
+    eq               // [true_if_matches]
+    readJump         // [readJump, true/false]
     jumpi            // []
+
+    0x00 0x00 revert // [0,0] then revert -> []
 
     updateJump:
         SET_NUMBER_OF_HORSES()
+    readJump:
+        GET_NUMBER_OF_HORSES()
 }
 
-#define macro SET_NUMBER_OF_HORSES() = takes(0) returns(0) {}
+#define macro SET_NUMBER_OF_HORSES() = takes(0) returns(0) {
+    // 2. get the value from calldata
+    
+    // 1. get the storage slot
+    [NUMBER_OF_HORSES_STORAGE_SLOT]     // [storageSlot]
+    // 3. sstore opcode
+
+}
+
+#define macro GET_NUMBER_OF_HORSES() = takes(0) returns(0) {}
