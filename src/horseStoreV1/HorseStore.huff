@@ -49,12 +49,14 @@
 }
 
 #define macro SET_NUMBER_OF_HORSES() = takes(0) returns(0) {
-    // 2. get the value from calldata
-    
-    // 1. get the storage slot
-    [NUMBER_OF_HORSES_STORAGE_SLOT]     // [storageSlot]
+    // 1. get the value from calldata
+    0x04                                // [4]
+    calldataload                        // [calldata - functionSelector = inputValue]
+    // 2. get the storage slot
+    [NUMBER_OF_HORSES_STORAGE_SLOT]     // [storageSlot, inputValue]
     // 3. sstore opcode
-
+    sstore // top -> storageSlot = key, bottom -> inputValue = value
+    stop // if not stopped, it would go on to execute the next function too
 }
 
 #define macro GET_NUMBER_OF_HORSES() = takes(0) returns(0) {}
