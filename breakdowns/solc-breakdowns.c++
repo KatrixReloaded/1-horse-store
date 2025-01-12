@@ -9,74 +9,95 @@
 // Free Memory Pointer
 PUSH1 0x80        // [0x80]
 PUSH1 0x40        // [0x40, 0x80]
-MSTORE            // 
+MSTORE            // []
 
 // What does this chunk do?
+// Jumps if no value is sent with transaction, else revert
+// If we make the contract have a payable constructor, the compiler would then skip this part [L#17-L#24]
 CALLVALUE         // [msg.value]
 DUP1              // [msg.value, msg.value]
 ISZERO            // [msg.value == 0, msg.value]
 PUSH1 0x0e        // [0x0e, msg.value == 0, msg.value]
-JUMPI
-PUSH0
-DUP1
-REVERT
-JUMPDEST
-POP
-PUSH1 0xa5
-DUP1
-PUSH2 0x001b
-PUSH0
-CODECOPY
-PUSH0
-RETURN
-INVALID
+JUMPI             // [msg.value]
+PUSH0             // [0x00, msg.value]
+DUP1              // [0x00, 0x00, msg.value]
+REVERT            // [msg.value]
+
+JUMPDEST          // [msg.value]
+POP               // []
+PUSH1 0xa5        // [0xa5]
+DUP1              // [0xa5, 0xa5]
+PUSH2 0x001b      // [0x001b, 0xa5, 0xa5]
+PUSH0             // [0x00, 0x001b, 0xa5, 0xa5]
+CODECOPY          // [0xa5]                             Memory:[runtime code]
+PUSH0             // [0x00, 0xa5]
+RETURN            // []
+INVALID           // []                                 Contract Creation Code ends here
+
+
+
+// 2. Runtime Code
+// Entry point of all calls
+// Free Memory Pointer
 PUSH1 0x80
 PUSH1 0x40
 MSTORE
-CALLVALUE
-DUP1
-ISZERO
-PUSH1 0x0e
-JUMPI
-PUSH0
-DUP1
-REVERT
-JUMPDEST
-POP
-PUSH1 0x04
-CALLDATASIZE
-LT
-PUSH1 0x30
-JUMPI
-PUSH0
-CALLDATALOAD
-PUSH1 0xe0
-SHR
-DUP1
-PUSH4 0xcdfead2e
-EQ
-PUSH1 0x34
-JUMPI
-DUP1
-PUSH4 0xe026c017
-EQ
-PUSH1 0x45
-JUMPI
-JUMPDEST
-PUSH0
-DUP1
-REVERT
-JUMPDEST
-PUSH1 0x43
-PUSH1 0x3f
-CALLDATASIZE
-PUSH1 0x04
-PUSH1 0x59
-JUMP
-JUMPDEST
-PUSH0
-SSTORE
-JUMP
+
+// Checking for msg.value, if not 0, revert
+CALLVALUE         // [msg.value]
+DUP1              // [msg.value, msg.value]
+ISZERO            // [msg.value == 0, msg.value]
+PUSH1 0x0e        // [0x0e, msg.value == 0, msg.value]
+JUMPI             // [msg.value]
+// Jump to JUMPDEST on L#57
+PUSH0             // [0x00, msg.value]
+DUP1              // [0x00, 0x00, msg.value]
+REVERT            // [msg.value]
+
+JUMPDEST          // [msg.value]
+POP               // []
+PUSH1 0x04        // [0x04]
+CALLDATASIZE      // [calldata_size, 0x04]
+LT                // [calldata_size < 0x04]
+PUSH1 0x30        // [0x30, calldata_size < 0x04]
+JUMPI             // []
+// Jump if calldata_size is less than 4 bytes to revert as there is no function selector in calldata (L#82)
+
+PUSH0             // [0x00]
+CALLDATALOAD      // [32-bytes of calldata]
+PUSH1 0xe0        // [0xe0, 32-bytes of calldata]       0xe0 (=224) is the offset in bits, which is 28 bytes
+SHR               // [calldata[0:4]]                    function_selector      
+DUP1              // [function_selector, function_selector]
+PUSH4 0xcdfead2e  // [0xcdfead2e, function_selector, function_selector]
+EQ                // [function_selector == 0xcdfead2e, function_selector]
+PUSH1 0x34        // [0x34, function_selector == 0xcdfead2e, function_selector]
+JUMPI             // [function_selector]
+DUP1              // [function_selector, function_selector]
+PUSH4 0xe026c017  // [0xe026c017, function_selector, function_selector]
+EQ                // [function_selector == 0xe026c017, function_selector]
+PUSH1 0x45        // [0x45, function_selector == 0xe026c017, function_selector]
+JUMPI             // [function_selector]
+
+// Revert JumpDest
+JUMPDEST          // []
+PUSH0             // [0x00]
+DUP1              // [0x00, 0x00]
+REVERT            // []
+
+// 0xcdfead2e JumpDest
+JUMPDEST          // [function_selector]
+PUSH1 0x43        // [0x43, function_selector]
+PUSH1 0x3f        // [0x3f, 0x43, function_selector]
+CALLDATASIZE      // [calldata_size, 0x3f, 0x43, function_selector]
+PUSH1 0x04        // [0x04, calldata_size, 0x3f, 0x43, function_selector]
+PUSH1 0x59        // [0x59, 0x04, calldata_size, 0x3f, 0x43, function_selector]
+JUMP              // [0x04, calldata_size, 0x3f, 0x43, function_selector]
+
+// 0xe026c017 JumpDest
+JUMPDEST          // [function_selector]
+PUSH0             // [0x00, function_selector]
+SSTORE            // []
+JUMP              // []
 JUMPDEST
 STOP
 JUMPDEST
