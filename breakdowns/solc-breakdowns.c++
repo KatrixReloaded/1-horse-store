@@ -84,7 +84,7 @@ PUSH0             // [0x00]
 DUP1              // [0x00, 0x00]
 REVERT            // []
 
-// 0xcdfead2e JumpDest
+// updateNumberOfHorses(0xcdfead2e) JumpDest 1
 JUMPDEST          // [function_selector]
 PUSH1 0x43        // [0x43, function_selector]
 PUSH1 0x3f        // [0x3f, 0x43, function_selector]
@@ -93,50 +93,69 @@ PUSH1 0x04        // [0x04, calldata_size, 0x3f, 0x43, function_selector]
 PUSH1 0x59        // [0x59, 0x04, calldata_size, 0x3f, 0x43, function_selector]
 JUMP              // [0x04, calldata_size, 0x3f, 0x43, function_selector]
 
-// 0xe026c017 JumpDest
-JUMPDEST          // [function_selector]
-PUSH0             // [0x00, function_selector]
-SSTORE            // []
-JUMP              // []
+// updateNumberOfHorses(0xcdfead2e) JumpDest 4
+JUMPDEST          // [calldata - function_selector, 0x43, function_selector]
+PUSH0             // [0x00, calldata - function_selector, 0x43, function_selector]
+SSTORE            // [0x43, function_selector]
+JUMP              // [function_selector]
+// Jump to JumpDest 5
+
+// updateNumberOfHorses(0xcdfead2e) JumpDest 5
 JUMPDEST
 STOP
-JUMPDEST
-PUSH0
-SLOAD
-PUSH1 0x40
-MLOAD
-SWAP1
-DUP2
-MSTORE
-PUSH1 0x20
-ADD
-PUSH1 0x40
-MLOAD
-DUP1
-SWAP2
-SUB
-SWAP1
-RETURN
-JUMPDEST
-PUSH0
-PUSH1 0x20
-DUP3
-DUP5
-SUB
-SLT
-ISZERO
-PUSH1 0x68
-JUMPI
-PUSH0
-DUP1
-REVERT
-JUMPDEST
-POP
-CALLDATALOAD
-SWAP2
-SWAP1
-POP
-JUMP
+
+// readNumberOfHorses(0xe026c017) JumpDest
+// the only jumpdest
+JUMPDEST          // [function_selector]
+PUSH0             // [0x00, function_selector]
+SLOAD             // [numHorses, function_selector]
+PUSH1 0x40        // [0x40, numHorses, function_selector]
+MLOAD             // [free_memory_pointer = 0x80, numHorses, function_selector]
+SWAP1             // [numHorses, 0x80, function_selector]
+DUP2              // [0x80, numHorses, 0x80, function_selector]
+MSTORE            // [0x80, function_selector]          Memory:[0x80: numHorses]
+PUSH1 0x20        // [0x20, 0x80, function_selector]
+ADD               // [0xa0, function_selector]
+PUSH1 0x40        // [0x40, 0xa0, function_selector]
+MLOAD             // [0x80, 0xa0, function_selector]
+DUP1              // [0x80, 0x80, 0xa0, function_selector]
+SWAP2             // [0xa0, 0x80, 0x80, function_selector]
+SUB               // [0xa0 - 0x80, 0x80, function_selector]
+SWAP1             // [0x80, 0x20, function_selector]
+// Return a value of 0x20 size (32-bytes) that is at location 0x80 in memory
+RETURN            // [function_selector]
+
+// updateNumberOfHorses(0xcdfead2e) JumpDest 2
+// check to see if there is a value to update the horse number, else revert
+JUMPDEST          // [0x04, calldata_size, 0x3f, 0x43, function_selector]
+PUSH0             // [0x00, 0x04, calldata_size, 0x3f, 0x43, function_selector]
+PUSH1 0x20        // [0x20, 0x00, 0x04, calldata_size, 0x3f, 0x43, function_selector]
+DUP3              // [0x04, 0x20, 0x00, 0x04, calldata_size, 0x3f, 0x43, function_selector]
+DUP5              // [calldata_size, 0x04, 0x20, 0x00, 0x04, calldata_size, 0x3f, 0x43, function_selector]
+SUB               // [calldata_size - 0x04, 0x20, 0x00, 0x04, calldata_size, 0x3f, 0x43, function_selector]
+SLT               // [calldata_size - 0x04 < 0x20, 0x00, 0x04, calldata_size, 0x3f, 0x43, function_selector]
+ISZERO            // [more_calldata_than_selector?, 0x00, 0x04, calldata_size, 0x3f, 0x43, function_selector]
+PUSH1 0x68        // [0x68, more_calldata_than_selector?, 0x00, 0x04, calldata_size, 0x3f, 0x43, function_selector]
+JUMPI             // [0x00, 0x04, calldata_size, 0x3f, 0x43, function_selector]
+// We are going to jump to jumpdest 3 if there is more calldata than:
+// function_selector + 0x20
+
+// Revert if there isn't enough calldata!
+PUSH0             // [0x00, 0x00, 0x04, calldata_size, 0x3f, 0x43, function_selector]
+DUP1              // [0x00, 0x00, 0x00, 0x04, calldata_size, 0x3f, 0x43, function_selector]
+REVERT            // []
+
+// updateNumberOfHorses(0xcdfead2e) JumpDest 3
+JUMPDEST          // [0x00, 0x04, calldata_size, 0x3f, 0x43, function_selector]
+POP               // [0x04, calldata_size, 0x3f, 0x43, function_selector]
+// Ignore the func selector as offset of 4 bytes
+CALLDATALOAD      // [calldata - function_selector, calldata_size, 0x3f, 0x43, function_selector]
+SWAP2             // [0x3f, calldata_size, calldata - function_selector, 0x43, function_selector]
+SWAP1             // [calldata_size, 0x3f, calldata - function_selector, 0x43, function_selector]
+POP               // [0x3f, calldata - function_selector, 0x43, function_selector]
+JUMP              // [calldata - function_selector, 0x43, function_selector]
+// Jump to JumpDest 4
+
 INVALID
 LOG2
 PUSH5 0x6970667358
