@@ -5,6 +5,8 @@
 // 0xcdfead2e00000000000000000000000000000000000000000000000000000001
 // 0xe026c01700000000000000000000000000000000000000000000000000000001
 
+#define constant NUMBER_OF_HORSES_STORAGE_SLOT = FREE_STORAGE_POINTER()
+
 /* Interface */
 #define function updateHorseNumber(uint256) nonpayable returns() {}
 #define function readNumberOfHorses() view returns(uint256) {}
