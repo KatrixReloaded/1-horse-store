@@ -1,0 +1,60 @@
+/* Import */
+#include "../../lib/huffmate/src/data-structures/Hashmap.huff"
+
+/* HorseStore Interface */
+#define function mintHorse() nonpayable returns() {}
+#define function feedHorse(uint256) nonpayable returns() {}
+#define function isHappyHorse(uint256) view returns(bool) {}
+#define function horseIdToFedTimeStamp(uint256) view returns(uint256) {}
+#define function HORSE_HAPPY_IF_FED_WITHIN() view returns(uint256) {}
+
+/* Storage slots */
+#define constant HORSE_FED_TIMESTAMP_LOCATION = FREE_STORAGE_POINTER() // storage slot for the mapping
+
+#define macro MAIN() = takes(0) returns(0) {
+    0x00 calldataload 0xe0 shr
+
+    // mintHorse() == 0x61fc6a67
+    // feedHorse(uint256) == 0xc65e2eaa
+    // isHappyHorse(uint256) == 0x62134726
+    // horseIdToFedTimeStamp(uint256) == 0xf163af78
+    // HORSE_HAPPY_IF_FED_WITHIN() == 0x8c1d96ae
+    dup1 __FUNC_SIG(mintHorse) eq mintHorseFn jumpi
+    dup1 __FUNC_SIG(feedHorse) eq feedHorseFn jumpi
+    dup1 __FUNC_SIG(isHappyHorse) eq isHappyHorseFn jumpi
+    dup1 __FUNC_SIG(horseIdToFedTimeStamp) eq horseIdToFedTimeStampFn jumpi
+    dup1 __FUNC_SIG(HORSE_HAPPY_IF_FED_WITHIN) eq horseHappyIfFedWithinFn jumpi
+    0x00 0x00 revert
+
+    mintHorseFn:
+        MINT_HORSE()
+    feedHorseFn:
+        FEED_HORSE()
+    isHappyHorseFn:
+        IS_HAPPY_HORSE()
+    horseHappyIfFedWithinFn:
+        HORSE_HAPPY_IF_FED_WITHIN_FN()
+    horseIdToFedTimeStampFn:
+        HORSE_ID_TO_FED_TIMESTAMP()
+}
+
+#define macro MINT_HORSE() = takes(0) returns(0) {
+    0x04 calldataload [HORSE_STORAGE_SLOT] sstore
+    stop
+}
+
+#define macro FEED_HORSE() = takes(0) returns(0) {
+    timestamp           // [timestamp]
+    0x04 calldataload   // [horseId, timestamp]
+    [HORSE_FED_TIMESTAMP_LOCATION] // [HORSE_FED_TIMESTAMP_LOCATION, horseId, timestamp]
+    STORE_ELEMENT_FROM_KEYS(0x00) // [] fn. from Hashmap.huff, takes the top 3 values from stack, returns 0 values
+    stop
+}
+
+#define macro HORSE_ID_TO_FED_TIMESTAMP() = takes(0) returns(0) {
+    0x04 calldataload // [horseId]
+    [HORSE_FED_TIMESTAMP_LOCATION] // [HORSE_FED_TIMESTAMP_LOCATION, horseId]
+    LOAD_ELEMENT_FROM_KEYS(0x00) // [horseFedTimestamp]
+    0x00 mstore                 // [] Memory: [0x00: horseFedTimestamp]
+    0x20 0x00 return
+}
