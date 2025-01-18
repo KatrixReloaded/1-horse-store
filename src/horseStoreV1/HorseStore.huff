@@ -8,18 +8,17 @@
 #define constant NUMBER_OF_HORSES_STORAGE_SLOT = FREE_STORAGE_POINTER() // A counter, essentially, that says "hey here's a slot that's currently open to store"
 
 #define macro MAIN() = takes(0) returns(0) {
-    // 0x00          // [0]
-    // // Huff is smart enough to know that I mean PUSH0 0x00 by this
-    // // If I wrote 0x01, it would know I mean PUSH1 0x01, and so on
-    // calldataload  // [calldata]
-    // // adds the first 32 bytes of calldata to the stack
-    // // Pops off the 0x00 value from the stack so that it doesn't skip the first byte of calldata
-    // /** To get the function selector, we need to get the first 4 bytes of calldata, 
-    //  * which means we need to shift the calldata by 28 bytes to the right, or 224 bits
-    //  */
-    // 0xe0          // TOP [0xe0, calldata] BOTTOM
-    // shr           // [functionSelector]
-    0x00 calldataload 0xe0 shr
+    0x00          // [0]
+    // Huff is smart enough to know that I mean PUSH0 0x00 by this
+    // If I wrote 0x01, it would know I mean PUSH1 0x01, and so on
+    calldataload  // [calldata]
+    // adds the first 32 bytes of calldata to the stack
+    // Pops off the 0x00 value from the stack so that it doesn't skip the first byte of calldata
+    /** To get the function selector, we need to get the first 4 bytes of calldata, 
+     * which means we need to shift the calldata by 28 bytes to the right, or 224 bits
+     */
+    0xe0          // TOP [0xe0, calldata] BOTTOM
+    shr           // [functionSelector]
 
     // 0xcdfead2e == updateHorseNumber(uint256)
     // 0xe026c017 == readNumberOfHorses()
