@@ -10,6 +10,7 @@
 
 /* Storage slots */
 #define constant HORSE_FED_TIMESTAMP_LOCATION = FREE_STORAGE_POINTER() // storage slot for the mapping
+#define constant HORSE_IF_FED_WITHIN_CONST = 0x0000000000000000000000000000000000000000000000000000000000015180
 
 #define macro MAIN() = takes(0) returns(0) {
     0x00 calldataload 0xe0 shr
@@ -44,17 +45,40 @@
 }
 
 #define macro FEED_HORSE() = takes(0) returns(0) {
-    timestamp           // [timestamp]
-    0x04 calldataload   // [horseId, timestamp]
+    timestamp                      // [timestamp]
+    0x04 calldataload              // [horseId, timestamp]
     [HORSE_FED_TIMESTAMP_LOCATION] // [HORSE_FED_TIMESTAMP_LOCATION, horseId, timestamp]
-    STORE_ELEMENT_FROM_KEYS(0x00) // [] fn. from Hashmap.huff, takes the top 3 values from stack, returns 0 values
+    STORE_ELEMENT_FROM_KEYS(0x00)  // [] fn. from Hashmap.huff, takes the top 3 values from stack, returns 0 values
     stop
 }
 
 #define macro HORSE_ID_TO_FED_TIMESTAMP() = takes(0) returns(0) {
     0x04 calldataload // [horseId]
     [HORSE_FED_TIMESTAMP_LOCATION] // [HORSE_FED_TIMESTAMP_LOCATION, horseId]
-    LOAD_ELEMENT_FROM_KEYS(0x00) // [horseFedTimestamp]
-    0x00 mstore                 // [] Memory: [0x00: horseFedTimestamp]
+    LOAD_ELEMENT_FROM_KEYS(0x00)   // [horseFedTimestamp]
+    0x00 mstore                    // [] Memory: [0x00: horseFedTimestamp]
     0x20 0x00 return
 }
+
+#define macro IS_HAPPY_HORSE() = takes(0) returns(0) {
+    0x04 calldataload // [horseId]
+    [HORSE_FED_TIMESTAMP_LOCATION]      // [HORSE_FED_TIMESTAMP_LOCATION, horseId]
+    LOAD_ELEMENT_FROM_KEYS(0x00)        // [horseFedTimestamp]
+    timestamp                           // [timestamp, horseFedTimestamp]
+    sub                                 // [timestamp - horseFedTimestamp]
+    [HORSE_IF_FED_WITHIN_CONST]         // [HORSE_IF_FED_WITHIN_CONST, diff]
+    dup2 dup2                           // [HORSE_IF_FED_WITHIN_CONST, diff, HORSE_IF_FED_WITHIN_CONST, diff]
+    gt                                  // [HORSE_IF_FED_WITHIN_CONST > diff, HORSE_IF_FED_WITHIN_CONST, diff]
+    start_return_true jumpi             // [HORSE_IF_FED_WITHIN_CONST, diff]
+    eq                                  // [HORSE_IF_FED_WITHIN_CONST == diff]
+    start_return_true jumpi             // [] if true
+    start_return                        // [] if false
+    jump
+
+    start_return_true:
+    0x01                                // [1]
+
+    start_return:
+    0x00 mstore
+
+    0x20 0x00 return
